@@ -13,9 +13,11 @@
     <author href="http://kevinverhoef.nl" email="verhoef.k@gmail.com">
         Kevin Verhoef
     </author>
+    
+    <gap:plugin name="org.apache.cordova.geolocation" version="0.3.10" />
 
 	<icon src="icon.png" />
-    <preference name="phonegap-version" value="3.1.0" />
+    <preference name="phonegap-version" value="3.6.3" />
 
     <preference name="fullscreen" value="true" />
     <preference name="detect-data-types" value="false" />
@@ -23,6 +25,6 @@
 
     <gap:platform name="android" />
     
-    <access origin="http://*.yahooapis.com" />
-    <access origin="http://query.yahooapis.com" />
+    <access origin="https://*.yahooapis.com" />
+    <access origin="https://query.yahooapis.com" />
 </widget>
