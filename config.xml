@@ -13,6 +13,8 @@
     <author href="http://kevinverhoef.nl" email="verhoef.k@gmail.com">
         Kevin Verhoef
     </author>
+    
+    <gap:plugin name="org.apache.cordova.geolocation" version="0.3.10" />
 
 	<icon src="icon.png" />
     <preference name="phonegap-version" value="3.6.3" />
