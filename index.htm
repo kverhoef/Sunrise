@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script type="text/javascript" src="js/angular.min.js"></script>
+        <script type="text/javascript" src="js/angular-local-storage.js"></script>
+		<script type="text/javascript" src="js/moment.min.js"></script>
+		<script type="text/javascript" src="js/suncalc.js"></script>
+		<script type="text/javascript" src="js/jquery.min.js"></script>
+		<script type="text/javascript" src="js/bootstrap.min.js"></script>
+		<script type="text/javascript" src="js/bootstrap-datepicker.js"></script>
+		
+		<link rel="stylesheet" href="css/bootstrap.min.css">
+		<link rel="stylesheet" href="css/datepicker3.css">
+	
+		<meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <script>
+			
+			// https://github.com/mourner/suncalc
+			// http://www.zonsopgang-zonsondergang.nl/hoe-laat-donker.html
+			
+            var app = angular.module('app', ['LocalStorageModule']);
+
+			app.controller('AstronomicalDataController', function($scope, localStorageService, $timeout, $http) {
+				
+				$scope.view = "main";
+				
+				$scope.date = new Date();
+				
+				$scope.version = "0.13";
+				
+				$scope.defaultSettings = {
+					lat: 51.985103,
+					lng: 5.898730,
+					city: "Amsterdam",
+					country: "NL",
+					locations: [ { city: 'Arnhem', lat: 51.985103, lng: 5.898730, country: "NL" } ]
+				}
+				
+				$scope.settings = localStorageService.get('settings'+$scope.version)||$scope.defaultSettings;
+				
+				$scope.$watch('settings', function(newValue, oldValue, scope) {
+					localStorageService.add('settings'+$scope.version,JSON.stringify(newValue));
+				}, true);
+				
+				$scope.$watch('date', function(newValue, oldValue, scope) {
+					$scope.update();
+				}, true);
+				
+				$scope.init = function(){
+					
+					$('.datepicker').datepicker({
+						todayHighlight: true,
+						autoclose: true,
+						todayBtn: true
+					}).on('changeDate', function(e){
+						if (e.date != undefined && e.date.getTime() != $scope.date.getTime()){
+							$scope.date = e.date;
+						}
+						else {
+							$scope.date = new Date();
+							$(this).datepicker('update', $scope.date);
+						}
+	
+						$scope.$apply();
+						
+						$(this).datepicker('hide');
+					});
+					
+					// Set initial location
+					if ($scope.settings.locations.length == 0) {
+						$scope.getGeoLocation();
+					}
+					
+					$scope.update();
+				}
+				
+				$scope.update = function(){
+					$scope.times = SunCalc.getTimes($scope.date, $scope.settings.lat, $scope.settings.lng);
+				}
+				
+				$scope.getGeoLocation = function(findCity){
+					if (navigator.geolocation) {
+						navigator.geolocation.getCurrentPosition(function(position){
+							
+							$http.get("https://query.yahooapis.com/v1/public/yql?q=select%20city%20from%20geo.placefinder%20where%20text%3D%22" + position.coords.latitude + "%2C%20" + position.coords.longitude + "%22%20and%20gflags%3D%22R%22&format=json&diagnostics=true&callback=")
+							.success(function(response) {
+								if (findCity){
+									$scope.foundCity = response.query.results.Result.city;
+									$scope.foundLat = position.coords.latitude;
+									$scope.foundLng = position.coords.longitude;
+									$scope.searchCity = $scope.foundCity;
+								}
+								else {
+									$scope.settings.city = response.query.results.Result.city;
+									$scope.settings.lat = position.coords.latitude;
+									$scope.settings.lng = position.coords.longitude;
+								}
+							});
+							
+						});
+					}
+				}
+				
+				$scope.getGeoCity = function(){
+					
+					$http.get("https://query.yahooapis.com/v1/public/yql?q=SELECT%20*%20FROM%20geo.places%20WHERE%20text%3D%22" + $scope.searchCity + "%22%20&format=json&diagnostics=true&callback=")
+					.success(function(response) {
+
+						if (response.query.results != undefined && response.query.results.place != undefined && response.query.results.place.centroid != undefined){
+							$scope.foundCountry = response.query.results.place.country.code;
+							$scope.foundCity = response.query.results.place.name;
+							$scope.foundLat = response.query.results.place.centroid.latitude;
+							$scope.foundLng = response.query.results.place.centroid.longitude;
+						}
+						else if (response.query.results != undefined && response.query.results.place[0] != undefined){
+							$scope.foundCountry = response.query.results.place[0].country.code;
+							$scope.foundCity = response.query.results.place[0].name;
+							$scope.foundLat = response.query.results.place[0].centroid.latitude;
+							$scope.foundLng = response.query.results.place[0].centroid.longitude;
+						}
+						else {
+							$scope.foundCountry = undefined;
+							$scope.foundCity = undefined;
+							$scope.foundLat = undefined;
+							$scope.foundLng = undefined;
+						}
+					});
+					
+					//https://query.yahooapis.com/v1/public/yql?q=SELECT%20*%20FROM%20geo.places%20WHERE%20text%3D%22arnhem%22%20&format=json&diagnostics=true&callback=
+				}
+				
+				$scope.incrementDays = function(addDays){
+					$scope.date.setDate($scope.date.getDate() + addDays);
+				}
+				
+				$scope.toggleSettings = function(){
+					if ($scope.view != "settings"){
+						$scope.preView = $scope.view;
+						$scope.view = "settings";
+					} 
+					else {
+							$scope.view = $scope.preView;
+					}
+				}
+				
+				$scope.selectCity = function(){
+					$scope.settings.locations.push({ city: $scope.foundCity, lat: $scope.foundLat, lng: $scope.foundLng, country: $scope.foundCountry });
+				}
+				
+				$scope.removeLocation = function(index){
+					$scope.settings.locations.splice(index,1);
+				}
+				
+				
+				$scope.setCity = function(location){
+					$scope.settings.city = location.city;
+					$scope.settings.lat = location.lat;
+					$scope.settings.lng = location.lng;
+					$scope.settings.country = location.country;
+					$scope.update();
+				}
+				
+				$scope.keyupCity = function(){
+					$scope.lastKeyupCityTime = new Date().getTime();
+					$timeout(function(){
+			
+						if (new Date().getTime() - $scope.lastKeyupCityTime > 900){
+							$scope.lastKeyupCityTime = new Date().getTime();
+							$scope.getGeoCity();
+							
+						}
+					},1000);
+				}
+				
+            });
+			
+        </script>
+		<style>
+		
+			body {
+				font-size:14px;
+			}
+		
+			.astronomicalDawn, .astronomicalDusk {
+				background-color:#222;
+				color: white;
+			}
+			
+			.nauticalDawn, .nauticalDusk {
+				background-color:#444;
+				color: white;
+			}
+			
+			.dawn, .dusk {
+				background-color:#AAA;
+				color: white;
+			}
+			
+			.sunrise, .sunset {
+				background-color:#FFE185;
+			}
+			
+			.goldenHourEnd, .goldenHour {
+				background-color:#DAA520;
+			}
+			
+			.solarNoon {
+				background-color:#FFCC33;
+			}
+			
+			.navbar-head {
+				content: " "!important;
+				margin-left: -15px!important;
+				margin-right: -15px!important;
+				box-sizing: border-box!important;
+			}
+			
+			.navbar-toggle {
+				display:block!important;
+				border-radius: 4px!important;
+				float: right!important;
+				margin-bottom: 8px!important;
+				margin-right: 15px!important;
+				margin-top: 8px!important;
+				padding: 9px 10px!important;
+				position: relative!important;
+			}
+			
+			.container-fl {
+				margin-left: auto;
+				margin-right: auto;
+				padding-left: 15px;
+				padding-right: 15px;
+			}
+			
+			.navbar {
+				margin-bottom: 0px;
+			}
+			
+			.row {
+				line-height:240%;
+				border-bottom:1px solid black;
+			}
+			
+			.navbar-default {
+				background-color:#993366;
+				border:0;
+				color:black;
+				border-bottom:1px solid black;
+			}
+			
+			body {
+				background-color: black;
+			}
+			
+			.btn-highlight {
+				background-color: #C6749D;
+			}
+				
+			.navbar-brand:link, .navbar-brand:visited, .navbar-brand:hover {
+				color:white;
+			}
+
+        </style>
+    </head>
+    <body ng-app="app">
+		<div ng-controller="AstronomicalDataController">
+		
+			<nav class="navbar navbar-default">
+			  <div class="container-fl">
+			
+				<div class="navbar-head">
+			
+					<span class="glyphicon glyphicon-cog btn btn-primary navbar-toggle"  ng-class="{'btn-highlight': view == 'settings'}" ng-click="toggleSettings()"></span>
+
+					<a class="navbar-brand" href="#">Sunrise</a>
+				</div>
+
+			  </div>
+			</nav>
+			
+			<div class="main" ng-show="view == 'main'">
+			
+				<nav class="navbar navbar-default" style="background-color:#AD3973!important;color:white;">
+				  <div class="container-fl">
+			
+					<div class="navbar-head row">
+						<table style="width:100%;">
+							<tr>
+								<td style="width:120px;">
+						
+									<span class="glyphicon glyphicon-chevron-left btn btn-primary navbar-toggle" style="float:left!important;margin-left: 15px;" ng-click="incrementDays(-1)"></span>
+									
+									<span class="glyphicon glyphicon glyphicon-globe btn btn-primary navbar-toggle" ng-class="{ hidden: settings.locations.length == 0 }" data-toggle="dropdown" style="float:left!important;margin-left: 0px;"></span>
+									<ul class="dropdown-menu">
+										<li>
+											<a href="#" ng-click="getGeoLocation()">Current location</a>
+										</li>
+										<li ng-repeat="location in settings.locations track by $index">
+											<a href="#" ng-click="setCity(location)">{{location.city}}</a>
+										</li>
+									</ul>
+									
+								</td>
+						
+								<td class="text-center">
+							
+									<span style="font-size: 18px; height: 50px; line-height: 20px; padding: 15px; display:block;">{{settings.city}} {{date | date:'dd-MM-yyyy' }}</span>
+					
+								<td style="width:120px;">
+									<span class="glyphicon glyphicon-chevron-right btn btn-primary navbar-toggle" style="margin-right: 15px!important;" ng-click="incrementDays(1)"></span>
+									<span class="glyphicon glyphicon glyphicon-calendar btn btn-primary navbar-toggle datepicker" style="margin-right: 15px!important;" ></span>
+									
+								</td>
+							</tr>
+						</table>
+					</div>
+
+					
+				  </div>
+				</nav>
+				
+				<div class="container-fluid">
+					<div class="row">
+						
+					</div>
+					<div class="astronomicalDawn row">
+						<div class="col-xs-12">
+							{{times.nightEnd | date:'HH:mm'}} Astronomische ochtendschemering
+						</div>
+					</div>
+					
+					<div class="nauticalDawn row">
+						<div class="col-xs-12">
+							{{times.nauticalDawn | date:'HH:mm'}} Nautische ochtendschemering
+						</div>
+					</div>
+					<div class="dawn row">
+						<div class="col-xs-12">
+							{{times.dawn | date:'HH:mm'}} Burgerlijke ochtendschemering
+						</div>
+					</div>
+				
+					<div class="sunrise row">
+						<div class="col-xs-12">
+							{{times.sunrise | date:'HH:mm'}} Zonsopgang
+						</div>
+					</div>
+				
+					<div class="goldenHourEnd row">
+						<div class="col-xs-12">
+							{{times.goldenHourEnd | date:'HH:mm'}} Golden hour eindigd
+						</div>
+					</div>
+					<div class="solarNoon row">
+						<div class="col-xs-12">
+							{{times.solarNoon | date:'HH:mm'}} Zon op hoogste punt
+						</div>
+					</div>
+					<div class="goldenHour row">
+						<div class="col-xs-12">
+							{{times.goldenHour | date:'HH:mm'}} Golden hour begint
+						</div>
+					</div>
+			
+					<div class="sunset row">
+						<div class="col-xs-12">
+							{{times.sunset | date:'HH:mm'}} Zonsondergang
+						</div>
+					</div>
+			
+					<div class="dusk row">
+						<div class="col-xs-12">
+							{{times.dusk | date:'HH:mm'}} Burgerlijke avondschemering 
+						</div>
+					</div>
+					<div class="nauticalDusk row">
+						<div class="col-xs-12">
+							{{times.nauticalDusk | date:'HH:mm'}} Nautische avondschemering
+						</div>
+					</div>
+					<div class="astronomicalDusk row">
+						<div class="col-xs-12">
+							{{times.night | date:'HH:mm'}} Astronomische avondschemering
+						</div>
+					</div>
+				</div>
+				
+				
+				<span ng-init="init()"></span>
+			</div>
+			<div class="settings" ng-show="view == 'settings'">
+				<div class="row">
+			
+					<div class="col-xs-12">
+							<div class="panel panel-default">
+								<div class="panel-body">
+									<label>Selecteer locatie</label>
+									<div class="input-group">
+										
+										<input type="text" class="form-control" placeholder="Plaats" ng-model="searchCity" ng-keyup="keyupCity()">
+										<span class="input-group-addon glyphicon glyphicon-map-marker btn btn-primary" id="basic-addon2" style="padding:0px 50px 0px 50px" ng-click="getGeoLocation(true)"></span>
+									</div>
+						
+								
+									<div ng-show="foundCity">
+										<label>Gevonden locatie</label>
+										<ul class="list-group">
+											<li class="list-group-item">
+												<span class="glyphicon glyphicon glyphicon-plus btn btn-default pull-right" style="line-height: normal;" ng-click="selectCity()"></span>
+												{{foundCity}}, {{foundCountry}}
+											</li>
+										</ul>
+									</div>
+									
+									<hr />
+									
+									<label>Locaties</label>
+									<ul class="list-group" >
+										<li class="list-group-item" ng-repeat="location in settings.locations track by $index">
+											<span class="glyphicon glyphicon glyphicon-remove btn btn-default pull-right" style="line-height: normal;" ng-click="removeLocation($index)"></span>
+											{{location.city}}, {{location.country}}  
+										</li>
+									</ul>
+						
+								</div>
+					
+							</div>
+						</div>
+					
+				</div>
+			</div>
+		</div>
+
+    </body>
+</html>
