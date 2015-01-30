@@ -261,6 +261,11 @@
 			.navbar-brand:link, .navbar-brand:visited, .navbar-brand:hover {
 				color:white;
 			}
+			
+			#buttonBar { 
+				background-color:#AD3973!important;
+				color:white;
+			}
 
         </style>
     </head>
@@ -282,13 +287,13 @@
 			
 			<div class="main" ng-show="view == 'main'">
 			
-				<nav class="navbar navbar-default" style="background-color:#AD3973!important;color:white;">
+				<nav class="navbar navbar-default" id="buttonBar">
 				  <div class="container-fl">
 			
 					<div class="navbar-head row">
 						<table style="width:100%;">
 							<tr>
-								<td style="width:120px;">
+								<td class="buttonCell" id="buttonCell1" style="width:60px;">
 						
 									<span class="glyphicon glyphicon-chevron-left btn btn-primary navbar-toggle" style="float:left!important;margin-left: 15px;margin-right: 0px!important;" ng-click="incrementDays(-1)"></span>
 									
@@ -304,11 +309,14 @@
 									
 								</td>
 						
-								<td class="text-center">
+								<td class="text-center" >
 							
-									<span style="font-size: 18px; line-height: 20px; padding: 15px; display:block;">{{settings.city}} {{date | date:'dd-MM-yyyy' }}</span>
+									<span style="font-size: 18px; line-height: 20px; padding: 15px; display:block;" id="textCell">
+										<strong style="font-size: 24px;">{{settings.city}}</strong><br />
+										{{date | date:'dd-MM-yyyy' }}
+									</span>
 					
-								<td style="width:120px;">
+								<td class="buttonCell" id="buttonCell2" style="width:60px;">
 									<span class="glyphicon glyphicon-chevron-right btn btn-primary navbar-toggle" style="margin-right: 15px!important;" ng-click="incrementDays(1)"></span>
 									<span class="glyphicon glyphicon glyphicon-calendar btn btn-primary navbar-toggle datepicker" style="margin-right: 15px!important;" ></span>
 									
