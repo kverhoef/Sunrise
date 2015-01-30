@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<widget xmlns = "http://www.w3.org/ns/widgets"
+        xmlns:gap = "http://phonegap.com/ns/1.0"
+        id        = "nl.kevinverhoef.sunrise"
+        version   = "1.0">
+
+    <name>Sunrise</name>
+
+    <description>
+        Sunrise
+    </description>
+
+    <author href="http://kevinverhoef.nl" email="verhoef.k@gmail.com">
+        Kevin Verhoef
+    </author>
+
+	<icon src="icon.png" />
+    <preference name="phonegap-version" value="3.1.0" />
+
+    <preference name="fullscreen" value="true" />
+    <preference name="detect-data-types" value="false" />
+    <preference name="exit-on-suspend" value="true" />
+
+    <gap:platform name="android" />
+    
+    <access origin="http://*.yahooapis.com" />
+    <access origin="http://query.yahooapis.com" />
+</widget>
