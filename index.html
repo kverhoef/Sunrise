@@ -11,7 +11,8 @@
 		
 		<link rel="stylesheet" href="css/bootstrap.min.css">
 		<link rel="stylesheet" href="css/datepicker3.css">
-	
+		<link rel="stylesheet" href="css/style.css">
+		
 		<meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
         <script>
@@ -26,7 +27,7 @@
 				$scope.view = "main";
 				
 				$scope.date = new Date();
-				
+				$scope.found = [];
 				$scope.version = "0.13";
 				
 				$scope.defaultSettings = {
@@ -83,13 +84,19 @@
 					if (navigator.geolocation) {
 						navigator.geolocation.getCurrentPosition(function(position){
 							
-							$http.get("https://query.yahooapis.com/v1/public/yql?q=select%20city%20from%20geo.placefinder%20where%20text%3D%22" + position.coords.latitude + "%2C%20" + position.coords.longitude + "%22%20and%20gflags%3D%22R%22&format=json&diagnostics=true&callback=")
+							$http.get("https://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20geo.placefinder%20where%20text%3D%22" + position.coords.latitude + "%2C%20" + position.coords.longitude + "%22%20and%20gflags%3D%22R%22&format=json&diagnostics=true&callback=")
 							.success(function(response) {
 								if (findCity){
-									$scope.foundCity = response.query.results.Result.city;
-									$scope.foundLat = position.coords.latitude;
-									$scope.foundLng = position.coords.longitude;
-									$scope.searchCity = $scope.foundCity;
+									$scope.found = [];
+								
+									var foundCountry = response.query.results.Result.countrycode;
+									var foundCity = response.query.results.Result.city;
+									var foundLat = position.coords.latitude;
+									var foundLng = position.coords.longitude;
+									
+									$scope.found.push({ country: foundCountry, city: foundCity, lat: foundLat, lng: foundLng });
+									
+									$scope.searchCity = foundCity + ", " + foundCountry;
 								}
 								else {
 									$scope.settings.city = response.query.results.Result.city;
@@ -106,18 +113,30 @@
 					
 					$http.get("https://query.yahooapis.com/v1/public/yql?q=SELECT%20*%20FROM%20geo.places%20WHERE%20text%3D%22" + $scope.searchCity + "%22%20&format=json&diagnostics=true&callback=")
 					.success(function(response) {
-
+						
+						// Oude resultaten wegdoen
+						$scope.found = [];
+						
 						if (response.query.results != undefined && response.query.results.place != undefined && response.query.results.place.centroid != undefined){
-							$scope.foundCountry = response.query.results.place.country.code;
-							$scope.foundCity = response.query.results.place.name;
-							$scope.foundLat = response.query.results.place.centroid.latitude;
-							$scope.foundLng = response.query.results.place.centroid.longitude;
+							
+							var foundCountry = response.query.results.place.country.code;
+							var foundCity = response.query.results.place.name;
+							var foundLat = response.query.results.place.centroid.latitude;
+							var foundLng = response.query.results.place.centroid.longitude;
+							
+							$scope.found.push({ country: foundCountry, city: foundCity, lat: foundLat, lng: foundLng });
+							
 						}
 						else if (response.query.results != undefined && response.query.results.place[0] != undefined){
-							$scope.foundCountry = response.query.results.place[0].country.code;
-							$scope.foundCity = response.query.results.place[0].name;
-							$scope.foundLat = response.query.results.place[0].centroid.latitude;
-							$scope.foundLng = response.query.results.place[0].centroid.longitude;
+							
+							for (var i = 0;i<response.query.results.place.length;i++){
+								var foundCountry = response.query.results.place[i].country.code;
+								var foundCity = response.query.results.place[i].name;
+								var foundLat = response.query.results.place[i].centroid.latitude;
+								var foundLng = response.query.results.place[i].centroid.longitude;
+								
+								$scope.found.push({ country: foundCountry, city: foundCity, lat: foundLat, lng: foundLng });
+							}
 						}
 						else {
 							$scope.foundCountry = undefined;
@@ -127,7 +146,6 @@
 						}
 					});
 					
-					//https://query.yahooapis.com/v1/public/yql?q=SELECT%20*%20FROM%20geo.places%20WHERE%20text%3D%22arnhem%22%20&format=json&diagnostics=true&callback=
 				}
 				
 				$scope.incrementDays = function(addDays){
@@ -144,8 +162,8 @@
 					}
 				}
 				
-				$scope.selectCity = function(){
-					$scope.settings.locations.push({ city: $scope.foundCity, lat: $scope.foundLat, lng: $scope.foundLng, country: $scope.foundCountry });
+				$scope.selectCity = function(location){
+					$scope.settings.locations.push(location);
 				}
 				
 				$scope.removeLocation = function(index){
@@ -161,11 +179,15 @@
 					$scope.update();
 				}
 				
+				$scope.getTime = function(){
+					return new Date().getTime();
+				}
+				
 				$scope.keyupCity = function(){
 					$scope.lastKeyupCityTime = new Date().getTime();
 					$timeout(function(){
 			
-						if (new Date().getTime() - $scope.lastKeyupCityTime > 900){
+						if (new Date().getTime() - $scope.lastKeyupCityTime > 499){
 							$scope.lastKeyupCityTime = new Date().getTime();
 							$scope.getGeoCity();
 							
@@ -176,98 +198,6 @@
             });
 			
         </script>
-		<style>
-		
-			body {
-				font-size:14px;
-			}
-		
-			.astronomicalDawn, .astronomicalDusk {
-				background-color:#222;
-				color: white;
-			}
-			
-			.nauticalDawn, .nauticalDusk {
-				background-color:#444;
-				color: white;
-			}
-			
-			.dawn, .dusk {
-				background-color:#AAA;
-				color: white;
-			}
-			
-			.sunrise, .sunset {
-				background-color:#FFE185;
-			}
-			
-			.goldenHourEnd, .goldenHour {
-				background-color:#DAA520;
-			}
-			
-			.solarNoon {
-				background-color:#FFCC33;
-			}
-			
-			.navbar-head {
-				content: " "!important;
-				margin-left: -15px!important;
-				margin-right: -15px!important;
-				box-sizing: border-box!important;
-			}
-			
-			.navbar-toggle {
-				display:block!important;
-				border-radius: 4px!important;
-				float: right!important;
-				margin-bottom: 8px!important;
-				margin-right: 15px!important;
-				margin-top: 8px!important;
-				padding: 9px 10px!important;
-				position: relative!important;
-			}
-			
-			.container-fl {
-				margin-left: auto;
-				margin-right: auto;
-				padding-left: 15px;
-				padding-right: 15px;
-			}
-			
-			.navbar {
-				margin-bottom: 0px;
-			}
-			
-			.row {
-				line-height:240%;
-				border-bottom:1px solid black;
-			}
-			
-			.navbar-default {
-				background-color:#993366;
-				border:0;
-				color:black;
-				border-bottom:1px solid black;
-			}
-			
-			body {
-				background-color: black;
-			}
-			
-			.btn-highlight {
-				background-color: #C6749D;
-			}
-				
-			.navbar-brand:link, .navbar-brand:visited, .navbar-brand:hover {
-				color:white;
-			}
-			
-			#buttonBar { 
-				background-color:#AD3973!important;
-				color:white;
-			}
-
-        </style>
     </head>
     <body ng-app="app">
 		<div ng-controller="AstronomicalDataController">
@@ -303,7 +233,7 @@
 											<a href="#" ng-click="getGeoLocation()">Current location</a>
 										</li>
 										<li ng-repeat="location in settings.locations track by $index">
-											<a href="#" ng-click="setCity(location)">{{location.city}}</a>
+											<a href="#" ng-click="setCity(location)">{{location.city}}, {{location.country}}</a>
 										</li>
 									</ul>
 									
@@ -410,28 +340,29 @@
 										<input type="text" class="form-control" placeholder="Plaats" ng-model="searchCity" ng-keyup="keyupCity()">
 										<span class="input-group-addon glyphicon glyphicon-map-marker btn btn-primary" id="basic-addon2" style="padding:0px 50px 0px 50px" ng-click="getGeoLocation(true)"></span>
 									</div>
-						
-								
-									<div ng-show="foundCity">
-										<label>Gevonden locatie</label>
+									<span class="spin glyphicon glyphicon-refresh" ng-show="getTime() - lastKeyupCityTime < 500 && getTime() - lastKeyupCityTime > 250"></span>
+									
+									<div ng-show="found.length > 0">
+										<label>Gevonden locatie(s)</label>
 										<ul class="list-group">
-											<li class="list-group-item">
-												<span class="glyphicon glyphicon glyphicon-plus btn btn-default pull-right" style="line-height: normal;" ng-click="selectCity()"></span>
-												{{foundCity}}, {{foundCountry}}
+											<li class="list-group-item" ng-repeat="location in found track by $index">
+												<span class="glyphicon glyphicon glyphicon-plus btn btn-default pull-right" style="line-height: normal;" ng-click="selectCity(location)"></span>
+												{{location.city}}, {{location.country}}  
 											</li>
 										</ul>
 									</div>
 									
 									<hr />
 									
-									<label>Locaties</label>
-									<ul class="list-group" >
-										<li class="list-group-item" ng-repeat="location in settings.locations track by $index">
-											<span class="glyphicon glyphicon glyphicon-remove btn btn-default pull-right" style="line-height: normal;" ng-click="removeLocation($index)"></span>
-											{{location.city}}, {{location.country}}  
-										</li>
-									</ul>
-						
+									<div ng-show="settings.locations.length > 0">
+										<label>Mijn locaties</label>
+										<ul class="list-group" >
+											<li class="list-group-item" ng-repeat="location in settings.locations track by $index">
+												<span class="glyphicon glyphicon glyphicon-remove btn btn-default pull-right" style="line-height: normal;" ng-click="removeLocation($index)"></span>
+												{{location.city}}, {{location.country}}  
+											</li>
+										</ul>
+									</div>
 								</div>
 					
 							</div>
