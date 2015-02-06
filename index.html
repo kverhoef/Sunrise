@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <script type="text/javascript" src="js/Calendar.js"></script>
         <script type="text/javascript" src="js/angular.min.js"></script>
         <script type="text/javascript" src="js/angular-local-storage.js"></script>
 		<script type="text/javascript" src="js/moment.min.js"></script>
@@ -50,6 +49,15 @@
 				}, true);
 				
 				$scope.init = function(){
+					
+					var options = {
+					  date: new Date(),
+					  mode: 'date'
+					};
+					
+					datePicker.show(options, function(date){
+					  alert("date result " + date);  
+					});
 					
 					$('.datepicker').datepicker({
 						todayHighlight: true,
