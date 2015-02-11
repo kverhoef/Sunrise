@@ -160,6 +160,8 @@ if (!window.plugins.datePicker) {
 				
 				$scope.init = function(){
 					$('.datepicker').on("click",function(){
+						alert("date");  
+					
 						var options = {
 						  date: new Date(),
 						  mode: 'date'
