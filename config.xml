@@ -29,11 +29,4 @@
     <access origin="https://*.yahooapis.com" />
     <access origin="https://query.yahooapis.com" />
     
-    <feature name="DatePicker">
-    <param name="ios-package" value="DatePicker"/>
-</feature>
-
-<feature name="DatePickerPlugin">
-    <param name="android-package" value="com.sharinglabs.cordova.plugin.datepicker.DatePickerPlugin"/>
-</feature>
 </widget>
