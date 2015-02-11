@@ -159,16 +159,18 @@ if (!window.plugins.datePicker) {
 				}, true);
 				
 				$scope.init = function(){
-					
-					var options = {
-					  date: new Date(),
-					  mode: 'date'
-					};
-					
-					window.plugins.datePicker.show(options, function(date){
-					  alert("date result " + date);  
+					$('.datepicker').on("click",function(){
+						var options = {
+						  date: new Date(),
+						  mode: 'date'
+						};
+						
+						window.plugins.datePicker.show(options, function(date){
+						  alert("date result " + date);  
+						});
 					});
 					
+					/*
 					$('.datepicker').datepicker({
 						todayHighlight: true,
 						autoclose: true,
@@ -186,7 +188,7 @@ if (!window.plugins.datePicker) {
 						
 						$(this).datepicker('hide');
 					});
-					
+					*/
 					// Set initial location
 					if ($scope.settings.locations.length == 0) {
 						$scope.getGeoLocation();
